@@ -178,7 +178,7 @@ def test_parse_history(convert_system_message_to_human: bool) -> None:
         name="calculator", content=function_answer_3, tool_call_id="1"
     )
     message8 = ToolMessage(
-        name="calculator", content=function_answer_4, tool_call_id="2"
+        name=None, content=function_answer_4, tool_call_id="2"
     )
     message9 = AIMessage(content=text_answer1)
     messages = [

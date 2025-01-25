@@ -301,10 +301,21 @@ def _convert_to_parts(
     return parts
 
 
-def _convert_tool_message_to_part(message: ToolMessage | FunctionMessage) -> Part:
-    """Converts a tool or function message to a google part."""
+def _convert_tool_message_to_part(
+    message: ToolMessage | FunctionMessage, tool_name: str | None = None
+) -> Part:
+    """
+    Converts a tool or function message to a google part.
+
+    Args:
+    message (ToolMessage | FunctionMessage): The message to convert to part.
+    tool_name (str, optional): The name of the tool retrieved from the tool call.
+
+    Returns:
+        Part: Google Part.
+    """
     # Legacy agent stores tool name in message.additional_kwargs instead of message.name
-    name = message.name or message.additional_kwargs.get("name")
+    name = message.name or message.additional_kwargs.get("name") or tool_name
     response: Any
     if not isinstance(message.content, str):
         response = message.content
@@ -340,7 +351,12 @@ def _get_ai_message_tool_messages_parts(
         if message.tool_call_id in tool_calls_ids:
             # remove the id from the list, so that we do not iterate over it again
             tool_calls_ids.remove(message.tool_call_id)
-            part = _convert_tool_message_to_part(message)
+            reference_tool_call = [
+                tool_call
+                for tool_call in ai_message.tool_calls
+                if tool_call["id"] == message.tool_call_id
+            ][0]
+            part = _convert_tool_message_to_part(message, reference_tool_call["name"])
             parts.append(part)
     return parts
 
