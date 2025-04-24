@@ -1219,9 +1219,9 @@ class ChatVertexAI(_VertexAICommon, BaseChatModel):
                     f"Unexpected argument '{arg}' "
                     f"provided to ChatVertexAI.{suggestion}"
                 )
-            if arg == "thinking_budget":
-                thinking_budget = kwargs.pop(arg)
-                kwargs["thinking_config"] = {"thinking_budget": thinking_budget}
+        if "thinking_budget" in kwargs:
+            thinking_budget = kwargs.pop("thinking_budget")
+            kwargs["thinking_config"] = {"thinking_budget": thinking_budget}
         super().__init__(**kwargs)
 
     model_config = ConfigDict(
