@@ -169,6 +169,7 @@ _allowed_params = [
     "thinking_config",
 ]
 _allowed_params_prediction_service = ["request", "timeout", "metadata", "labels"]
+_allowed_params_thinking_config = ["thinking_budget"]
 
 
 @dataclass
@@ -1201,9 +1202,29 @@ class ChatVertexAI(_VertexAICommon, BaseChatModel):
         if model_name:
             kwargs["model_name"] = model_name
 
-        if "thinking_budget" in kwargs:
-            thinking_budget = kwargs.pop("thinking_budget")
-            kwargs["thinking_config"] = {"thinking_budget": thinking_budget}
+        if "thinking_config" in kwargs:
+            if not isinstance(kwargs["thinking_config"], dict):
+                raise ValueError(
+                    "thinking_config must be a dictionary. "
+                    "Please refer to the Vertex AI documentation for more details."
+                )
+            for key in kwargs["thinking_config"]:
+                if key not in _allowed_params_thinking_config:
+                    suggestions = get_close_matches(
+                        key, _allowed_params_thinking_config, n=1
+                    )
+                    suggestion = (
+                        f" Did you mean: '{suggestions[0]}'?" if suggestions else ""
+                    )
+                    logger.warning(
+                        f"Unexpected argument '{key}' in thinking_config"
+                        f"provided to ChatVertexAI.{suggestion}"
+                    )
+            kwargs["thinking_config"] = {
+                k: v
+                for k, v in kwargs["thinking_config"].items()
+                if k in _allowed_params_thinking_config
+            }
 
         # Get all valid field names, including aliases
         valid_fields = set()
@@ -2243,14 +2264,17 @@ def _get_usage_metadata_gemini(raw_metadata: dict) -> Optional[UsageMetadata]:
     output_tokens = raw_metadata.get("candidates_token_count", 0)
     total_tokens = raw_metadata.get("total_token_count", 0)
     thought_tokens = raw_metadata.get("thoughts_token_count", 0)
-    if all(count == 0 for count in [input_tokens, output_tokens, total_tokens, thought_tokens]):
+    if all(
+        count == 0
+        for count in [input_tokens, output_tokens, total_tokens, thought_tokens]
+    ):
         return None
     elif thought_tokens > 0:
         return UsageMetadata(
             input_tokens=input_tokens,
             output_tokens=output_tokens,
             total_tokens=input_tokens + output_tokens + thought_tokens,
-            output_token_details={"reasoning": thought_tokens}
+            output_token_details={"reasoning": thought_tokens},
         )
     else:
         return UsageMetadata(
