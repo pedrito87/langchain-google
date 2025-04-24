@@ -166,7 +166,7 @@ _allowed_params = [
     "response_logprobs",
     "logprobs",
     "labels",
-    "thinking_budget",
+    "thinking_config",
 ]
 _allowed_params_prediction_service = ["request", "timeout", "metadata", "labels"]
 
@@ -1201,6 +1201,10 @@ class ChatVertexAI(_VertexAICommon, BaseChatModel):
         if model_name:
             kwargs["model_name"] = model_name
 
+        if "thinking_budget" in kwargs:
+            thinking_budget = kwargs.pop("thinking_budget")
+            kwargs["thinking_config"] = {"thinking_budget": thinking_budget}
+
         # Get all valid field names, including aliases
         valid_fields = set()
         for field_name, field_info in self.model_fields.items():
@@ -1219,9 +1223,6 @@ class ChatVertexAI(_VertexAICommon, BaseChatModel):
                     f"Unexpected argument '{arg}' "
                     f"provided to ChatVertexAI.{suggestion}"
                 )
-        if "thinking_budget" in kwargs:
-            thinking_budget = kwargs.pop("thinking_budget")
-            kwargs["thinking_config"] = {"thinking_budget": thinking_budget}
         super().__init__(**kwargs)
 
     model_config = ConfigDict(
