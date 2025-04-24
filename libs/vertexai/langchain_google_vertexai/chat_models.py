@@ -166,6 +166,7 @@ _allowed_params = [
     "response_logprobs",
     "logprobs",
     "labels",
+    "thinking_budget",
 ]
 _allowed_params_prediction_service = ["request", "timeout", "metadata", "labels"]
 
@@ -1218,6 +1219,9 @@ class ChatVertexAI(_VertexAICommon, BaseChatModel):
                     f"Unexpected argument '{arg}' "
                     f"provided to ChatVertexAI.{suggestion}"
                 )
+            if arg == "thinking_budget":
+                thinking_budget = kwargs.pop(arg)
+                kwargs["thinking_config"] = {"thinking_budget": thinking_budget}
         super().__init__(**kwargs)
 
     model_config = ConfigDict(
@@ -2237,8 +2241,16 @@ def _get_usage_metadata_gemini(raw_metadata: dict) -> Optional[UsageMetadata]:
     input_tokens = raw_metadata.get("prompt_token_count", 0)
     output_tokens = raw_metadata.get("candidates_token_count", 0)
     total_tokens = raw_metadata.get("total_token_count", 0)
-    if all(count == 0 for count in [input_tokens, output_tokens, total_tokens]):
+    thought_tokens = raw_metadata.get("thoughts_token_count", 0)
+    if all(count == 0 for count in [input_tokens, output_tokens, total_tokens, thought_tokens]):
         return None
+    elif thought_tokens > 0:
+        return UsageMetadata(
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            total_tokens=input_tokens + output_tokens + thought_tokens,
+            output_token_details={"reasoning": thought_tokens}
+        )
     else:
         return UsageMetadata(
             input_tokens=input_tokens,

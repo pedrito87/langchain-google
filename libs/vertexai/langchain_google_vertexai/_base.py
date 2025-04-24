@@ -209,6 +209,8 @@ class _VertexAICommon(_VertexAIBase):
     "among the top-k most probable tokens. Top-k is ignored for Codey models."
     n: int = 1
     """How many completions to generate for each prompt."""
+    thinking_budget: Optional[int] = None
+    """Indicates the thinking budget in tokens."""
     seed: Optional[int] = None
     """Random seed for the generation."""
     streaming: bool = False
